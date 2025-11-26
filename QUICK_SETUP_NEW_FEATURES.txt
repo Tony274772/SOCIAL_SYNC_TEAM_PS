@@ -1,0 +1,317 @@
+================================================================================
+QUICK SETUP GUIDE - NEW FEATURES (3 & 5)
+================================================================================
+
+FEATURES ADDED:
+✓ Feature 3: Real-Time Notifications & Feeds (Socket.IO + Redis Pub/Sub)
+✓ Feature 5: Activity Logging & System Monitoring (Logstash-like + Dashboard)
+
+================================================================================
+PREREQUISITES
+================================================================================
+
+Required Services Running:
+1. MongoDB (default: localhost:27017)
+2. Redis (default: localhost:6379)
+3. Node.js server (default: localhost:3000)
+
+All dependencies are already in package.json:
+- express: ^4.18.2
+- mongoose: ^7.0.0
+- redis: ^5.10.0
+- socket.io: ^4.8.1
+- cors: ^2.8.5
+- dotenv: ^16.0.3
+
+================================================================================
+NEW FILES CREATED
+================================================================================
+
+Backend:
+✓ backend/models/ActivityLog.js - MongoDB schema for activity logs
+✓ backend/services/activityLogger.js - Logging service with aggregation
+✓ backend/middleware/loggingMiddleware.js - Request/error logging middleware
+✓ backend/routes/monitoring.js - Monitoring API endpoints
+
+Frontend:
+✓ frontend/assets/js/monitoring.js - Monitoring dashboard module
+
+Updated Files:
+✓ backend/server.js - Added logging middleware and monitoring routes
+✓ backend/routes/posts.js - Added activity logging to post operations
+✓ frontend/index.html - Added monitoring view and navigation
+✓ frontend/assets/css/style.css - Added monitoring dashboard styles
+✓ frontend/assets/js/app.js - Added monitoring view support
+
+================================================================================
+FEATURE 3: REAL-TIME NOTIFICATIONS & FEEDS
+================================================================================
+
+Already Implemented In:
+- backend/services/socketService.js
+- frontend/assets/js/realtimeNotifications.js
+
+Real-time Events:
+✓ Post Likes - Instant like count updates
+✓ Comments - Real-time comment notifications
+✓ New Posts - Live feed updates
+✓ Follow Actions - User follow notifications
+✓ Online Status - User online/offline tracking
+
+How It Works:
+1. User performs action (like, comment, etc.)
+2. API endpoint emits Socket.IO event
+3. Event published to Redis channel
+4. All connected clients receive update
+5. UI updates without page refresh
+
+Testing:
+1. Open app in two browser windows
+2. Create post in window 1
+3. Like post in window 2
+4. See real-time update in window 1
+
+================================================================================
+FEATURE 5: ACTIVITY LOGGING & SYSTEM MONITORING
+================================================================================
+
+New Monitoring Endpoints:
+
+1. GET /api/monitoring/health
+   - System uptime
+   - Memory usage
+   - CPU usage
+   - Response: { status, uptime, memory, cpu }
+
+2. GET /api/monitoring/stats?timeRange=24h
+   - Activity statistics
+   - Event counts by type
+   - Error statistics
+   - Top active users
+   - Response: { eventStats, errorStats, topUsers, totalEvents }
+
+3. GET /api/monitoring/logs?eventType=post_created&limit=50
+   - Activity log entries
+   - Filterable by: eventType, userId, severity, date range
+   - Response: { logs, total, limit, skip }
+
+4. GET /api/monitoring/events
+   - Server-Sent Events stream
+   - Real-time monitoring updates
+   - Heartbeat every 30 seconds
+
+Logged Events:
+✓ post_created - When user creates post
+✓ post_deleted - When user deletes post
+✓ post_liked - When user likes post
+✓ post_unliked - When user unlikes post
+✓ comment_added - When user adds comment
+✓ user_login - When user logs in
+✓ user_signup - When user registers
+✓ api_error - API endpoint errors
+✓ system_error - System-level errors
+
+================================================================================
+ACCESSING THE MONITORING DASHBOARD
+================================================================================
+
+1. Start the server:
+   npm start
+
+2. Open browser:
+   http://localhost:3000
+
+3. Login/Register
+
+4. Click "📊 Monitoring" in top navigation
+
+5. View:
+   - System Health (uptime, memory, CPU)
+   - Activity Statistics (event counts, errors)
+   - Recent Activity Logs (with filtering)
+
+Dashboard Features:
+- Real-time health status
+- Event statistics for last 24 hours
+- Activity log viewer with event type filter
+- Auto-refresh every 30 seconds
+- Responsive design for mobile/desktop
+
+================================================================================
+API TESTING EXAMPLES
+================================================================================
+
+Using curl:
+
+1. Check System Health:
+   curl http://localhost:3000/api/monitoring/health
+
+2. Get Activity Statistics:
+   curl http://localhost:3000/api/monitoring/stats?timeRange=24h
+
+3. Get Activity Logs:
+   curl http://localhost:3000/api/monitoring/logs?limit=50
+
+4. Filter by Event Type:
+   curl "http://localhost:3000/api/monitoring/logs?eventType=post_created&limit=20"
+
+5. Filter by User:
+   curl "http://localhost:3000/api/monitoring/logs?userId=user123&limit=20"
+
+6. Filter by Severity:
+   curl "http://localhost:3000/api/monitoring/logs?severity=error&limit=20"
+
+7. Filter by Date Range:
+   curl "http://localhost:3000/api/monitoring/logs?startDate=2025-11-24&endDate=2025-11-25"
+
+================================================================================
+MONITORING DASHBOARD SECTIONS
+================================================================================
+
+Section 1: System Health
+- Status: Healthy/Unhealthy indicator
+- Uptime: Server uptime in days/hours/minutes/seconds
+- Heap Memory: Used/Total heap memory
+- External Memory: External memory usage
+
+Section 2: Activity Statistics (Last 24 Hours)
+- Post Created: Number of posts created
+- Post Liked: Number of likes
+- Comment Added: Number of comments
+- User Login: Number of logins
+- Errors: Total error count
+- Total Events: All events combined
+
+Section 3: Recent Activity Logs
+- Event Type Filter: Dropdown to filter by event type
+- Log Entries: List of recent activities
+- Timestamp: When event occurred
+- Event Name: Type of event
+- Details: User, action, status code
+
+Color Coding:
+- Blue border: Info level
+- Orange border: Warning level
+- Red border: Error level
+
+================================================================================
+DATABASE SCHEMA
+================================================================================
+
+ActivityLog Collection:
+{
+  _id: ObjectId,
+  eventType: String,
+  userId: String,
+  username: String,
+  resourceId: String,
+  resourceType: String,
+  action: String,
+  details: Object,
+  statusCode: Number,
+  errorMessage: String,
+  ipAddress: String,
+  userAgent: String,
+  duration: Number,
+  metadata: Object,
+  severity: String,
+  timestamp: Date
+}
+
+Auto-Deletion:
+- Logs older than 30 days are automatically deleted
+- TTL index on timestamp field
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Problem: Monitoring dashboard shows "Loading..."
+Solution: 
+  1. Check if MongoDB is running
+  2. Check if Redis is running
+  3. Check browser console for errors
+  4. Verify /api/monitoring/health endpoint works
+
+Problem: Activity logs not appearing
+Solution:
+  1. Create a post or like a post to generate events
+  2. Check MongoDB ActivityLog collection exists
+  3. Verify logActivity() is being called
+  4. Check server console for errors
+
+Problem: Real-time updates not working
+Solution:
+  1. Check Socket.IO connection in browser console
+  2. Verify Redis is running
+  3. Check for CORS errors
+  4. Restart server and browser
+
+Problem: High memory usage
+Solution:
+  1. Check if TTL index is working
+  2. Reduce log retention period in schema
+  3. Archive old logs to external storage
+  4. Implement log cleanup job
+
+================================================================================
+PERFORMANCE TIPS
+================================================================================
+
+1. Database Optimization:
+   - Ensure MongoDB indexes are created
+   - Use lean() queries for read-only operations
+   - Implement pagination for large result sets
+
+2. Redis Optimization:
+   - Monitor Redis memory usage
+   - Set appropriate TTL for cached data
+   - Use Redis Streams for high-volume events
+
+3. API Optimization:
+   - Limit log query results (default: 100)
+   - Use date range filters for large datasets
+   - Cache frequently accessed statistics
+
+4. Frontend Optimization:
+   - Reduce refresh frequency if needed
+   - Implement virtual scrolling for large log lists
+   - Use local caching for statistics
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Test the monitoring dashboard:
+   - Navigate to Monitoring view
+   - Perform actions (create post, like, comment)
+   - Verify logs appear in dashboard
+
+2. Integrate with external systems:
+   - Forward logs to Logstash
+   - Create Graphini dashboards
+   - Set up alerting system
+
+3. Enhance monitoring:
+   - Add custom event types
+   - Implement advanced filtering
+   - Create saved reports
+
+4. Security:
+   - Add authentication to monitoring endpoints
+   - Implement rate limiting
+   - Encrypt sensitive log data
+
+================================================================================
+SUPPORT
+================================================================================
+
+For issues or questions:
+1. Check FEATURES_ADDED.txt for detailed documentation
+2. Review server console logs
+3. Check browser console for client-side errors
+4. Verify all services (MongoDB, Redis) are running
+
+================================================================================
+END OF QUICK SETUP GUIDE
+================================================================================

@@ -1,17 +1,335 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>socialsync</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta name="description" content="Social Sync - A modern social network platform" />
+    <title>Social Sync - Connect & Share</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
   </head>
   <body>
-    <div id="container">
-      <h1>Welcome to socialsync</h1>
-      <p>Your hub for managing social media accounts seamlessly.</p>
-      <button onclick="window.location.href='login.html'" id="getStartedBtn">Get Started</button>
+    <!-- Real-time Notifications Container -->
+    <div id="notifications-container" class="notifications-container"></div>
+    <!-- Authentication Overlay -->
+    <div id="auth-overlay" class="auth-overlay hidden">
+      <div class="auth-card">
+        <h1 class="auth-logo">Social Sync</h1>
+        <div class="auth-tabs">
+          <button class="auth-tab active" type="button" data-auth-view="login">
+            Login
+          </button>
+          <button class="auth-tab" type="button" data-auth-view="register">
+            Register
+          </button>
+        </div>
+
+        <!-- Login Form -->
+        <section id="auth-login-view">
+          <form id="login-form">
+            <div class="form-row">
+              <label for="login-username">Username / Email / User ID</label>
+              <input id="login-username" type="text" required />
+            </div>
+            <div class="form-row">
+              <label for="login-password">Password</label>
+              <input id="login-password" type="password" required />
+            </div>
+            <button type="submit" class="btn-primary">Login</button>
+          </form>
+        </section>
+
+        <!-- Register Form -->
+        <section id="auth-register-view" class="hidden">
+          <form id="register-form">
+            <div class="form-row">
+              <label for="register-username">Username</label>
+              <input id="register-username" type="text" required />
+            </div>
+            <div class="form-row">
+              <label for="register-email">Email (Gmail)</label>
+              <input id="register-email" type="email" required />
+            </div>
+            <div class="form-row">
+              <label for="register-password">Password</label>
+              <input id="register-password" type="password" required />
+            </div>
+            <button type="submit" class="btn-primary">Register</button>
+          </form>
+          <p class="auth-note">You will receive a 7-digit user ID after registering.</p>
+        </section>
+      </div>
     </div>
-    <script src="app.js"></script>
+
+    <!-- Relations Modal (Followers/Following) -->
+    <div id="relations-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-dialog">
+        <button id="relations-modal-close" class="modal-close" type="button">×</button>
+        <section class="relations-section">
+          <h2 id="relations-modal-title">Followers</h2>
+          <div class="form-row">
+            <input id="relations-search" type="text" placeholder="Search..." />
+          </div>
+          <div id="relations-list" class="relations-list"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Top Navigation -->
+    <header class="top-nav">
+      <div class="nav-inner">
+        <div class="logo">Social Sync</div>
+        <nav class="nav-links">
+          <a href="#" class="nav-item active" data-view="home">Home</a>
+          <a href="#" class="nav-item" data-view="search">Search</a>
+          <a href="#" class="nav-item" data-view="explore">Explore</a>
+          <a href="#" class="nav-item" data-view="reels">Reels</a>
+          <a href="#" class="nav-item" data-view="messages">Messages</a>
+          <a href="#" class="nav-item" data-view="monitoring">📊 Monitoring</a>
+          <a href="#" class="nav-item" data-view="profile">Profile</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+      <!-- Home View -->
+      <section id="view-home" class="page main-view">
+        <section class="feed-column">
+          <section class="feed">
+            <div id="posts-container" class="posts-grid"></div>
+            <div id="empty-state" class="empty-state hidden">
+              No posts yet. Be the first to create one.
+            </div>
+          </section>
+        </section>
+
+        <!-- Sidebar -->
+        <aside class="side-column">
+          <div class="profile-card">
+            <div class="avatar-placeholder large"></div>
+            <div>
+              <div class="profile-username">demo_user</div>
+              <div class="profile-name">Demo Account</div>
+            </div>
+          </div>
+
+          <div class="suggestions">
+            <div class="suggestions-header">
+              <span>Suggestions for you</span>
+            </div>
+            <ul id="suggestions-list" class="suggestions-list"></ul>
+          </div>
+        </aside>
+      </section>
+
+      <!-- Search View -->
+      <section id="view-search" class="page main-view hidden">
+        <section class="search-panel">
+          <h2>Search Profiles</h2>
+          <div class="form-row">
+            <label for="search-input">Profile ID or Username</label>
+            <input
+              id="search-input"
+              type="text"
+              placeholder="Type profile id or username..."
+            />
+          </div>
+          <button id="search-button" type="button" class="btn-primary">Search</button>
+          <div id="search-results" class="search-results"></div>
+        </section>
+      </section>
+
+      <!-- Reels View -->
+      <section id="view-reels" class="page main-view hidden">
+        <section class="feed">
+          <h2>Reels</h2>
+          <div id="reels-container" class="posts-grid"></div>
+          <div id="reels-empty" class="empty-state hidden">
+            No reels yet. Create a video post.
+          </div>
+        </section>
+      </section>
+
+      <!-- Explore View -->
+      <section id="view-explore" class="page main-view hidden">
+        <section class="feed">
+          <h2>Explore</h2>
+          <p class="empty-state">Explore view coming soon.</p>
+        </section>
+      </section>
+
+      <!-- Profile View -->
+      <section id="view-profile" class="page main-view hidden">
+        <section class="profile-edit">
+          <h2>My Profile</h2>
+          <div class="profile-stats">
+            <span id="profile-posts-count">0 posts</span>
+            <button type="button" id="profile-followers-button" class="profile-stat-link">
+              <span id="profile-followers-count">0</span> followers
+            </button>
+            <button type="button" id="profile-following-button" class="profile-stat-link">
+              <span id="profile-following-count">0</span> following
+            </button>
+          </div>
+          <form id="profile-form">
+            <div class="form-row">
+              <label for="profile-username">Username</label>
+              <input id="profile-username" type="text" required />
+            </div>
+            <div class="form-row">
+              <label for="profile-email">Email (Gmail)</label>
+              <input id="profile-email" type="email" required />
+            </div>
+            <div class="form-row">
+              <label for="profile-userid">User ID (read-only)</label>
+              <input id="profile-userid" type="text" readonly />
+            </div>
+            <div class="form-row">
+              <label for="profile-name">Full Name</label>
+              <input id="profile-name" type="text" />
+            </div>
+            <div class="form-row">
+              <label for="profile-bio">Bio</label>
+              <textarea id="profile-bio" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Save Profile</button>
+            <button type="button" id="logout-button" class="btn-primary btn-logout">
+              Logout
+            </button>
+          </form>
+        </section>
+
+        <section class="profile-posts">
+          <h3>My Posts</h3>
+          <div id="my-posts-empty" class="empty-state">
+            You haven't posted anything yet.
+          </div>
+          <div id="my-posts-container" class="posts-grid"></div>
+        </section>
+      </section>
+
+      <!-- Messages View -->
+      <section id="view-messages" class="page main-view hidden">
+        <section class="feed">
+          <h2>Messages</h2>
+          <p class="empty-state">Messages view coming soon.</p>
+        </section>
+      </section>
+
+      <!-- Monitoring Dashboard View -->
+      <section id="view-monitoring" class="page main-view hidden">
+        <section class="feed">
+          <h2>System Monitoring & Analytics</h2>
+          
+          <div class="monitoring-container">
+            <!-- Health Status -->
+            <div class="monitoring-card">
+              <h3>System Health</h3>
+              <div id="health-status" class="health-status">
+                <p>Loading...</p>
+              </div>
+            </div>
+
+            <!-- Activity Statistics -->
+            <div class="monitoring-card">
+              <h3>Activity Statistics (Last 24h)</h3>
+              <div id="activity-stats" class="activity-stats">
+                <p>Loading...</p>
+              </div>
+            </div>
+
+            <!-- Recent Activity Logs -->
+            <div class="monitoring-card">
+              <h3>Recent Activity Logs</h3>
+              <div class="logs-filter">
+                <select id="log-filter-type">
+                  <option value="">All Events</option>
+                  <option value="post_created">Post Created</option>
+                  <option value="post_liked">Post Liked</option>
+                  <option value="comment_added">Comment Added</option>
+                  <option value="user_login">User Login</option>
+                  <option value="api_error">API Error</option>
+                </select>
+              </div>
+              <div id="activity-logs" class="activity-logs">
+                <p>Loading...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <footer class="bottom-nav">
+      <button class="bottom-nav-btn" data-view="home" aria-label="Home" title="Home">
+        <span class="icon">⌂</span>
+      </button>
+      <button class="bottom-nav-btn" data-view="search" aria-label="Search" title="Search">
+        <span class="icon">🔍</span>
+      </button>
+      <button
+        class="bottom-nav-btn"
+        data-action="create"
+        aria-label="Create post"
+        title="Create post"
+      >
+        <span class="icon">＋</span>
+      </button>
+      <button class="bottom-nav-btn" data-view="reels" aria-label="Reels" title="Reels">
+        <span class="icon">🎞</span>
+      </button>
+      <button class="bottom-nav-btn" data-view="profile" aria-label="Profile" title="Profile">
+        <span class="icon">👤</span>
+      </button>
+    </footer>
+
+    <!-- Create Post Modal -->
+    <div id="create-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-dialog">
+        <button id="create-modal-close" class="modal-close" type="button">×</button>
+        <section class="create-post">
+          <h2>Create Post</h2>
+          <form id="create-post-form">
+            <div class="form-row">
+              <label for="caption">Caption</label>
+              <textarea id="caption" name="caption" rows="3" required placeholder="Write something..."></textarea>
+            </div>
+            
+            <div class="form-row">
+              <label>Add Photo or Video</label>
+              <div class="file-upload-wrapper">
+                <input
+                  id="mediaFile"
+                  name="mediaFile"
+                  type="file"
+                  accept="image/*,video/*"
+                />
+                <label for="mediaFile" class="file-upload-label">
+                  <span class="upload-icon">📸</span>
+                  <span class="upload-text" id="upload-text">Click to select photo or video</span>
+                </label>
+                <div id="file-preview" class="file-preview hidden">
+                  <img id="image-preview" class="preview-img hidden" alt="Preview of selected image" />
+                  <video id="video-preview" class="preview-video hidden" controls></video>
+                  <button type="button" class="btn-small remove-media" id="remove-media">Remove</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <button type="submit" class="btn-primary">Share Post</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="assets/js/realtimeNotifications.js"></script>
+    <script src="assets/js/monitoring.js"></script>
   </body>
 </html>

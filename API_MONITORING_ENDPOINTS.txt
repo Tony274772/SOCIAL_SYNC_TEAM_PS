@@ -1,0 +1,531 @@
+================================================================================
+MONITORING API ENDPOINTS DOCUMENTATION
+================================================================================
+
+BASE URL: http://localhost:3000/api/monitoring
+
+================================================================================
+1. GET /api/monitoring/health
+================================================================================
+
+Description: Get system health status including uptime, memory, and CPU usage
+
+Method: GET
+URL: /api/monitoring/health
+Authentication: None (recommended to add)
+
+Query Parameters: None
+
+Response (200 OK):
+{
+  "status": "healthy",
+  "timestamp": "2025-11-24T22:30:45.123Z",
+  "uptime": {
+    "seconds": 3600,
+    "formatted": "1h 0m 0s"
+  },
+  "memory": {
+    "heapUsed": "50 MB",
+    "heapTotal": "100 MB",
+    "external": "5 MB"
+  },
+  "cpu": {
+    "user": 1000000,
+    "system": 500000
+  }
+}
+
+Response (500 Error):
+{
+  "status": "unhealthy",
+  "message": "Error message"
+}
+
+Example cURL:
+curl http://localhost:3000/api/monitoring/health
+
+Example JavaScript:
+fetch('http://localhost:3000/api/monitoring/health')
+  .then(res => res.json())
+  .then(data => console.log(data))
+
+================================================================================
+2. GET /api/monitoring/stats
+================================================================================
+
+Description: Get activity statistics for a specified time range
+
+Method: GET
+URL: /api/monitoring/stats
+Authentication: None (recommended to add)
+
+Query Parameters:
+- timeRange (optional): 1h, 24h, 7d, 30d (default: 24h)
+
+Response (200 OK):
+{
+  "timeRange": "24h",
+  "period": {
+    "start": "2025-11-23T22:30:45.123Z",
+    "end": "2025-11-24T22:30:45.123Z"
+  },
+  "eventStats": [
+    {
+      "_id": "post_created",
+      "count": 15
+    },
+    {
+      "_id": "post_liked",
+      "count": 42
+    },
+    {
+      "_id": "comment_added",
+      "count": 28
+    },
+    {
+      "_id": "user_login",
+      "count": 8
+    }
+  ],
+  "errorStats": [
+    {
+      "_id": "api_error",
+      "count": 2
+    }
+  ],
+  "topUsers": [
+    {
+      "_id": "user123",
+      "activities": 45
+    },
+    {
+      "_id": "user456",
+      "activities": 32
+    }
+  ],
+  "totalEvents": 93,
+  "totalErrors": 2
+}
+
+Response (500 Error):
+{
+  "message": "Failed to fetch stats"
+}
+
+Example cURL:
+curl http://localhost:3000/api/monitoring/stats?timeRange=24h
+
+Example JavaScript:
+fetch('http://localhost:3000/api/monitoring/stats?timeRange=24h')
+  .then(res => res.json())
+  .then(data => console.log(data))
+
+Time Range Options:
+- 1h: Last 1 hour
+- 24h: Last 24 hours (default)
+- 7d: Last 7 days
+- 30d: Last 30 days
+
+================================================================================
+3. GET /api/monitoring/logs
+================================================================================
+
+Description: Get activity logs with optional filtering
+
+Method: GET
+URL: /api/monitoring/logs
+Authentication: None (recommended to add)
+
+Query Parameters:
+- eventType (optional): Filter by event type
+  Values: user_signup, user_login, post_created, post_liked, comment_added, etc.
+- userId (optional): Filter by user ID
+- severity (optional): Filter by severity
+  Values: info, warning, error, critical
+- startDate (optional): Filter from date (ISO format: YYYY-MM-DD)
+- endDate (optional): Filter to date (ISO format: YYYY-MM-DD)
+- limit (optional): Results per page (default: 100, max: 1000)
+- skip (optional): Pagination offset (default: 0)
+
+Response (200 OK):
+{
+  "logs": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "eventType": "post_created",
+      "userId": "user123",
+      "username": "john_doe",
+      "resourceId": "post456",
+      "resourceType": "post",
+      "action": "created_post",
+      "details": {
+        "caption": "Beautiful sunset",
+        "mediaType": "image"
+      },
+      "statusCode": 201,
+      "severity": "info",
+      "timestamp": "2025-11-24T22:30:45.123Z"
+    },
+    {
+      "_id": "507f1f77bcf86cd799439012",
+      "eventType": "post_liked",
+      "userId": "user456",
+      "resourceId": "post123",
+      "resourceType": "post",
+      "action": "liked_post",
+      "details": {
+        "postId": "post123",
+        "totalLikes": 5
+      },
+      "severity": "info",
+      "timestamp": "2025-11-24T22:25:30.456Z"
+    }
+  ],
+  "total": 245,
+  "limit": 50,
+  "skip": 0
+}
+
+Response (500 Error):
+{
+  "message": "Failed to fetch logs"
+}
+
+Example cURL:
+
+1. Get all logs:
+curl http://localhost:3000/api/monitoring/logs
+
+2. Get last 50 logs:
+curl http://localhost:3000/api/monitoring/logs?limit=50
+
+3. Get posts created:
+curl "http://localhost:3000/api/monitoring/logs?eventType=post_created"
+
+4. Get user's activities:
+curl "http://localhost:3000/api/monitoring/logs?userId=user123"
+
+5. Get errors only:
+curl "http://localhost:3000/api/monitoring/logs?severity=error"
+
+6. Get logs from specific date:
+curl "http://localhost:3000/api/monitoring/logs?startDate=2025-11-24&endDate=2025-11-25"
+
+7. Pagination:
+curl "http://localhost:3000/api/monitoring/logs?limit=20&skip=20"
+
+Example JavaScript:
+
+// Get all logs
+fetch('http://localhost:3000/api/monitoring/logs')
+  .then(res => res.json())
+  .then(data => console.log(data))
+
+// Get filtered logs
+const params = new URLSearchParams({
+  eventType: 'post_created',
+  severity: 'info',
+  limit: 50
+});
+fetch(`http://localhost:3000/api/monitoring/logs?${params}`)
+  .then(res => res.json())
+  .then(data => console.log(data))
+
+Event Types:
+- user_signup: User registration
+- user_login: User authentication
+- user_logout: User session end
+- post_created: New post creation
+- post_deleted: Post deletion
+- post_liked: Post like action
+- post_unliked: Post unlike action
+- comment_added: Comment creation
+- comment_deleted: Comment deletion
+- user_followed: Follow action
+- user_unfollowed: Unfollow action
+- profile_updated: Profile changes
+- api_error: API endpoint errors
+- system_error: System-level errors
+
+================================================================================
+4. GET /api/monitoring/events
+================================================================================
+
+Description: Server-Sent Events stream for real-time monitoring
+
+Method: GET
+URL: /api/monitoring/events
+Authentication: None (recommended to add)
+Content-Type: text/event-stream
+
+Query Parameters: None
+
+Response Format (Streaming):
+data: {"message": "Connected to event stream"}
+
+data: {"type": "heartbeat"}
+
+data: {"type": "heartbeat"}
+
+Example JavaScript (EventSource):
+
+const eventSource = new EventSource('http://localhost:3000/api/monitoring/events');
+
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Event:', data);
+};
+
+eventSource.onerror = (error) => {
+  console.error('Connection error:', error);
+  eventSource.close();
+};
+
+// Close connection when done
+// eventSource.close();
+
+Example JavaScript (Fetch with ReadableStream):
+
+async function streamEvents() {
+  const response = await fetch('http://localhost:3000/api/monitoring/events');
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    
+    const text = decoder.decode(value);
+    const lines = text.split('\n');
+    
+    lines.forEach(line => {
+      if (line.startsWith('data: ')) {
+        const data = JSON.parse(line.slice(6));
+        console.log('Event:', data);
+      }
+    });
+  }
+}
+
+streamEvents();
+
+================================================================================
+COMMON FILTER COMBINATIONS
+================================================================================
+
+1. Get all errors in last 24 hours:
+GET /api/monitoring/logs?severity=error&startDate=2025-11-23&endDate=2025-11-24
+
+2. Get specific user's activities:
+GET /api/monitoring/logs?userId=user123&limit=100
+
+3. Get all posts created today:
+GET /api/monitoring/logs?eventType=post_created&startDate=2025-11-24
+
+4. Get recent comments:
+GET /api/monitoring/logs?eventType=comment_added&limit=20
+
+5. Get critical errors:
+GET /api/monitoring/logs?severity=critical
+
+6. Get user login history:
+GET /api/monitoring/logs?eventType=user_login&userId=user123
+
+7. Get all likes in a date range:
+GET /api/monitoring/logs?eventType=post_liked&startDate=2025-11-20&endDate=2025-11-24
+
+8. Paginate through large result sets:
+GET /api/monitoring/logs?limit=50&skip=0
+GET /api/monitoring/logs?limit=50&skip=50
+GET /api/monitoring/logs?limit=50&skip=100
+
+================================================================================
+RESPONSE CODES
+================================================================================
+
+200 OK
+- Request successful
+- Data returned in response body
+
+400 Bad Request
+- Invalid query parameters
+- Missing required fields
+
+404 Not Found
+- Resource not found
+
+500 Internal Server Error
+- Server error occurred
+- Check server logs for details
+
+================================================================================
+LOG ENTRY FIELDS
+================================================================================
+
+_id: MongoDB ObjectId
+eventType: Type of event (string)
+userId: User who triggered event (string, optional)
+username: Username (string, optional)
+resourceId: ID of affected resource (string, optional)
+resourceType: Type of resource - post, user, comment, system (string)
+action: Specific action performed (string)
+details: Event-specific details (object)
+statusCode: HTTP status code (number, optional)
+errorMessage: Error description (string, optional)
+ipAddress: Client IP address (string, optional)
+userAgent: Browser/client info (string, optional)
+duration: Request duration in milliseconds (number, optional)
+metadata: Additional metadata (object, optional)
+severity: info, warning, error, critical (string)
+timestamp: Event timestamp (ISO 8601 date string)
+
+================================================================================
+RATE LIMITING RECOMMENDATIONS
+================================================================================
+
+Recommended Rate Limits:
+- /api/monitoring/logs: 100 requests per minute
+- /api/monitoring/stats: 50 requests per minute
+- /api/monitoring/health: 200 requests per minute
+- /api/monitoring/events: 10 concurrent connections
+
+Implementation:
+Use express-rate-limit middleware:
+
+const rateLimit = require('express-rate-limit');
+
+const monitoringLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: 'Too many requests'
+});
+
+app.use('/api/monitoring/', monitoringLimiter);
+
+================================================================================
+AUTHENTICATION RECOMMENDATIONS
+================================================================================
+
+Current Status: No authentication required
+
+Recommended Implementation:
+1. JWT Token Authentication
+2. API Key Authentication
+3. Role-Based Access Control (RBAC)
+
+Example with JWT:
+
+const authenticateToken = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.sendStatus(401);
+  
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
+app.use('/api/monitoring/', authenticateToken);
+
+================================================================================
+CACHING RECOMMENDATIONS
+================================================================================
+
+Recommended Caching Strategy:
+- Health status: Cache for 10 seconds
+- Statistics: Cache for 30 seconds
+- Logs: Cache for 5 seconds
+- Events: No caching (real-time stream)
+
+Implementation with Redis:
+
+const redis = require('redis');
+const client = redis.createClient();
+
+async function getCachedStats(timeRange) {
+  const cacheKey = `stats:${timeRange}`;
+  const cached = await client.get(cacheKey);
+  
+  if (cached) return JSON.parse(cached);
+  
+  const stats = await getActivityStats(timeRange);
+  await client.setEx(cacheKey, 30, JSON.stringify(stats));
+  
+  return stats;
+}
+
+================================================================================
+MONITORING BEST PRACTICES
+================================================================================
+
+1. Regular Monitoring:
+   - Check health status every 5 minutes
+   - Review error logs daily
+   - Analyze statistics weekly
+
+2. Alert Thresholds:
+   - Alert if error count > 10 in 1 hour
+   - Alert if memory usage > 80%
+   - Alert if uptime < 1 hour (server restart)
+
+3. Log Retention:
+   - Keep logs for 30 days (auto-delete)
+   - Archive logs older than 30 days
+   - Export critical logs to external storage
+
+4. Performance Optimization:
+   - Index frequently queried fields
+   - Use pagination for large result sets
+   - Implement caching for statistics
+
+5. Security:
+   - Require authentication for monitoring endpoints
+   - Implement rate limiting
+   - Encrypt sensitive log data
+   - Audit access to monitoring endpoints
+
+================================================================================
+INTEGRATION EXAMPLES
+================================================================================
+
+1. Integration with Logstash:
+
+const logstash = require('winston-logstash');
+
+app.get('/api/monitoring/logs', async (req, res) => {
+  const logs = await getActivityLogs(...);
+  
+  // Send to Logstash
+  logs.forEach(log => {
+    logger.info('Activity Log', log);
+  });
+  
+  res.json(logs);
+});
+
+2. Integration with Graphini (Visualization):
+
+Create dashboard with:
+- Real-time event count chart
+- Error rate trend
+- User activity heatmap
+- System health gauge
+
+3. Integration with Alert System:
+
+const nodemailer = require('nodemailer');
+
+async function checkAndAlert() {
+  const stats = await getActivityStats('1h');
+  
+  if (stats.totalErrors > 10) {
+    await sendAlert('High error rate detected');
+  }
+}
+
+setInterval(checkAndAlert, 5 * 60 * 1000);
+
+================================================================================
+END OF API DOCUMENTATION
+================================================================================
