@@ -1472,6 +1472,89 @@ navItems.forEach((link) => {
   });
 });
 
+// ======================== Search Functionality ========================
+
+/**
+ * Search users by username or userId
+ */
+async function searchUsers(query) {
+  if (!searchResults) return;
+
+  if (!query || query.trim().length === 0) {
+    searchResults.innerHTML = '<p class="empty-state">Enter a username or user ID to search</p>';
+    return;
+  }
+
+  searchResults.innerHTML = '<p class="empty-state">Searching...</p>';
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/search?query=${encodeURIComponent(query)}`);
+    const users = await response.json();
+
+    if (!response.ok) {
+      searchResults.innerHTML = `<p class="empty-state">${users.message || 'Search failed'}</p>`;
+      return;
+    }
+
+    if (!users || users.length === 0) {
+      searchResults.innerHTML = '<p class="empty-state">No users found</p>';
+      return;
+    }
+
+    // Display results
+    searchResults.innerHTML = '';
+    users.forEach((user) => {
+      const resultItem = document.createElement('div');
+      resultItem.className = 'search-result-item';
+      resultItem.innerHTML = `
+        <div class="avatar-placeholder small"></div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600;">${user.username}</div>
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            ${user.fullName || 'No name'} • ID: ${user.userId}
+          </div>
+          ${user.bio ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">${user.bio}</div>` : ''}
+        </div>
+      `;
+
+      resultItem.style.cursor = 'pointer';
+      resultItem.addEventListener('click', () => {
+        showNotification(`Selected ${user.username}`, 'info');
+      });
+
+      searchResults.appendChild(resultItem);
+    });
+  } catch (err) {
+    console.error('Search error:', err);
+    searchResults.innerHTML = '<p class="empty-state">Failed to search users</p>';
+  }
+}
+
+// Search button click
+if (searchButton) {
+  searchButton.addEventListener('click', () => {
+    if (searchInput) {
+      searchUsers(searchInput.value);
+    }
+  });
+}
+
+// Search on Enter key
+if (searchInput) {
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      searchUsers(searchInput.value);
+    }
+  });
+
+  // Clear results when input is cleared
+  searchInput.addEventListener('input', (e) => {
+    if (e.target.value.trim().length === 0) {
+      searchResults.innerHTML = '';
+    }
+  });
+}
+
 // ======================== Initialization ========================
 
 console.log('🚀 Social Sync loaded');

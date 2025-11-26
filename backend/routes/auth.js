@@ -427,4 +427,35 @@ router.get('/profile-stats', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/auth/search
+ * Search users by username or userId
+ */
+router.get('/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({ message: 'Search query is required' });
+    }
+
+    const searchTerm = query.trim();
+
+    // Search by username or userId (case-insensitive)
+    const users = await User.find({
+      $or: [
+        { username: { $regex: searchTerm, $options: 'i' } },
+        { userId: searchTerm }
+      ]
+    })
+      .limit(20)
+      .select('username fullName userId bio');
+
+    res.json(users);
+  } catch (err) {
+    console.error('Error searching users:', err);
+    res.status(500).json({ message: 'Failed to search users' });
+  }
+});
+
 module.exports = router;
