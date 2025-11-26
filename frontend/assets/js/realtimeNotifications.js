@@ -40,6 +40,8 @@ function initializeSocket() {
       `Someone liked a post! (${data.totalLikes} likes)`,
       'like'
     );
+
+    if (window.updateNotifications) window.updateNotifications();
   });
 
   // Real-time comment added notification
@@ -53,6 +55,8 @@ function initializeSocket() {
       `${data.commentedBy} commented: "${data.commentText.substring(0, 30)}..."`,
       'comment'
     );
+
+    if (window.updateNotifications) window.updateNotifications();
   });
 
   // New post from following users
@@ -68,6 +72,8 @@ function initializeSocket() {
     setTimeout(() => {
       loadPosts();
     }, 1000);
+
+    if (window.updateNotifications) window.updateNotifications();
   });
 
   // User follow notification
@@ -83,12 +89,31 @@ function initializeSocket() {
 
       // Update stats
       loadProfileStats();
+
+      if (window.updateNotifications) window.updateNotifications();
     }
   });
 
   // User online/offline status
   socket.on('user-status', (data) => {
     console.log(`User ${data.userId} is ${data.status}`);
+  });
+
+  // New message notification
+  socket.on('new-message', (data) => {
+    console.log('New message:', data);
+
+    showNotification(
+      `New message from ${data.senderUsername}: "${data.messageText.substring(0, 30)}..."`,
+      'message'
+    );
+
+    if (window.updateNotifications) window.updateNotifications();
+
+    // If we are in the messages view and chatting with this user, append message
+    if (window.appendIncomingMessage) {
+      window.appendIncomingMessage(data);
+    }
   });
 
   // Redis events

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { emitToAll, emitToUser, publishToRedis } = require('../services/socketService');
 const { logActivity } = require('../services/activityLogger');
 
@@ -57,7 +58,7 @@ router.post('/', async (req, res) => {
     });
 
     const saved = await post.save();
-    
+
     // Log activity
     await logActivity({
       eventType: 'post_created',
@@ -72,12 +73,29 @@ router.post('/', async (req, res) => {
       },
       severity: 'info',
     });
-    
-    // Emit real-time notification
+
     // Emit real-time notification to followers
     try {
       const owner = await User.findOne({ userId: ownerId });
       if (owner && owner.followers && Array.isArray(owner.followers)) {
+        // Create persistent notifications for all followers
+        const notifications = owner.followers.map(followerId => ({
+          userId: followerId,
+          type: 'post',
+          title: 'New Post',
+          message: `${saved.ownerUsername} posted: "${saved.caption.substring(0, 30)}..."`,
+          fromUserId: saved.ownerId,
+          fromUsername: saved.ownerUsername,
+          postId: saved._id,
+          read: false,
+          createdAt: new Date()
+        }));
+
+        if (notifications.length > 0) {
+          await Notification.insertMany(notifications);
+        }
+
+        // Emit real-time event to each follower
         owner.followers.forEach(followerId => {
           emitToUser(followerId, 'new-post', {
             postId: saved._id,
@@ -156,16 +174,36 @@ router.post('/:id/like', async (req, res) => {
       severity: 'info',
     });
 
-    // Emit real-time notification
     // Emit real-time notification to post owner
-    if (post.ownerId !== userId) {
-      emitToUser(post.ownerId, 'post-liked', {
-        postId: post._id,
-        likedBy: userId,
-        totalLikes: post.likes,
-        liked,
-        timestamp: new Date(),
-      });
+    if (post.ownerId !== userId && liked) {
+      try {
+        const liker = await User.findOne({ userId });
+        const likerName = liker ? liker.username : userId;
+
+        // Create persistent notification
+        await Notification.create({
+          userId: post.ownerId,
+          type: 'like',
+          title: 'New Like',
+          message: `${likerName} liked your post`,
+          fromUserId: userId,
+          fromUsername: likerName,
+          postId: post._id,
+          read: false
+        });
+
+        // Emit real-time event
+        emitToUser(post.ownerId, 'post-liked', {
+          postId: post._id,
+          likedBy: userId,
+          likedByUsername: likerName,
+          totalLikes: post.likes,
+          liked,
+          timestamp: new Date(),
+        });
+      } catch (err) {
+        console.error('Error creating like notification:', err);
+      }
     }
 
     res.json({
@@ -230,23 +268,31 @@ router.post('/:id/comments', async (req, res) => {
       severity: 'info',
     });
 
-    // Emit real-time notification
     // Emit real-time notification to post owner
-    if (post.ownerId !== author) { // Assuming author is userId or username, logic might need adjustment if author is username but ownerId is userId. 
-      // Checking auth.js, author seems to be username in some contexts but let's check how it's passed.
-      // In posts.js:176 const { text, author } = req.body;
-      // In posts.js:192 const commentAuthor = author ...
-      // If author is username, we can't easily compare with ownerId (userId).
-      // However, the requirement is "if any coment ... notification should be recieved by right user".
-      // The right user is the post owner.
-      
-      emitToUser(post.ownerId, 'comment-added', {
-        postId: post._id,
-        commentedBy: author,
-        commentText: text,
-        totalComments: post.comments.length,
-        timestamp: new Date(),
-      });
+    if (post.ownerId !== author) {
+      try {
+        // Create persistent notification
+        await Notification.create({
+          userId: post.ownerId,
+          type: 'comment',
+          title: 'New Comment',
+          message: `${author} commented: "${text.substring(0, 30)}..."`,
+          fromUserId: author, // Assuming author is username here based on existing code
+          fromUsername: author,
+          postId: post._id,
+          read: false
+        });
+
+        emitToUser(post.ownerId, 'comment-added', {
+          postId: post._id,
+          commentedBy: author,
+          commentText: text,
+          totalComments: post.comments.length,
+          timestamp: new Date(),
+        });
+      } catch (err) {
+        console.error('Error creating comment notification:', err);
+      }
     }
 
     res.status(201).json({

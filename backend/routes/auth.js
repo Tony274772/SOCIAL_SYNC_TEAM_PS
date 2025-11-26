@@ -340,6 +340,23 @@ router.post('/follow', async (req, res) => {
     const { emitToUser } = require('../services/socketService');
 
     // Emit real-time notification ONLY to the user being followed (not broadcast to all)
+    if (!isCurrentlyFollowing) {
+      try {
+        const Notification = require('../models/Notification');
+        await Notification.create({
+          userId: toUser.userId,
+          type: 'follow',
+          title: 'New Follower',
+          message: `${fromUser.username} started following you`,
+          fromUserId: fromUser.userId,
+          fromUsername: fromUser.username,
+          read: false
+        });
+      } catch (err) {
+        console.error('Error creating follow notification:', err);
+      }
+    }
+
     emitToUser(toUser.userId, 'user-followed', {
       followedBy: fromUser.userId,
       followedByUsername: fromUser.username,

@@ -1,0 +1,89 @@
+# Manual HTML Setup Instructions
+
+## Step 1: Add Notification Bell to Navigation
+
+**Location:** In [index.html](file:///c:/Users/pardhu/Desktop/SOCIAL_SYNC_TEAM_PS/frontend/index.html), find the navigation section (around line 82-89)
+
+**Add this BEFORE** the Profile link:
+
+```html
+<button type="button" id="notifications-bell" class="nav-item" style="position: relative; border: none; background: none; cursor: pointer; font-size: 1.2rem;">
+  🔔
+  <span id="notifications-badge" class="notification-badge hidden">0</span>
+</button>
+```
+
+---
+
+## Step 2: Add Notification Panel
+
+**Location:** Right AFTER `</header>` (around line 92) and BEFORE `<main>`
+
+**Add this:**
+
+```html
+<!-- Notifications Dropdown Panel -->
+<div id="notifications-panel" class="notifications-panel hidden">
+  <div class="notifications-header">
+    <h3>Notifications</h3>
+    <button type="button" id="mark-all-read-btn" class="btn-link">Mark all as read</button>
+  </div>
+  <div id="notifications-list" class="notifications-list">
+    <p class="empty-state">No notifications</p>
+  </div>
+</div>
+```
+
+---
+
+## Step 3: Replace Messages View
+
+**Location:** Find the Messages View section `<section id="view-messages"...>` (around line 226-232)
+
+**Replace the entire section** with:
+
+```html
+<!-- Messages View -->
+<section id="view-messages" class="page main-view hidden">
+  <div class="messages-container">
+    <div class="conversations-sidebar">
+      <h2>Messages</h2>
+      <div id="conversations-list" class="conversations-list">
+        <p class="empty-state">No conversations yet</p>
+      </div>
+    </div>
+    <div class="chat-area">
+      <div id="chat-empty" class="empty-state" style="padding: 2rem;">
+        Select a conversation to start messaging
+      </div>
+      <div id="chat-window" class="chat-window hidden">
+        <div class="chat-header">
+          <h3 id="chat-username">User</h3>
+        </div>
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chat-input" placeholder="Type a message..." maxlength="1000" />
+          <button type="button" id="send-message-btn" class="btn-primary">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+---
+
+## Step 4: Add Message Button to Search Results
+
+**This is handled in JavaScript** - when you search for users, a "Message" button will appear automatically.
+
+---
+
+## Summary
+
+After adding these 3 HTML sections:
+1. ✅ Notification bell with badge
+2. ✅ Notification dropdown panel
+3. ✅ Messages view with chat interface
+
+The JavaScript and CSS will handle all the functionality!

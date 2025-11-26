@@ -10,6 +10,8 @@ const http = require('http');
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
+const messageRoutes = require('./routes/messages');
+const notificationRoutes = require('./routes/notifications');
 const monitoringRoutes = require('./routes/monitoring');
 const { initializeSocket } = require('./services/socketService');
 const { requestLoggingMiddleware, errorLoggingMiddleware } = require('./middleware/loggingMiddleware');
@@ -35,6 +37,8 @@ app.use(express.static(frontendPath));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/monitoring', monitoringRoutes);
 
 // Health check endpoint
