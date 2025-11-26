@@ -139,11 +139,23 @@ main {
 
 @media (max-width: 1000px) {
   .side-column {
-    display: none;
+    display: block !important;
+    position: static;
+    width: 100%;
+    flex: none;
+    max-height: none;
+    margin-bottom: 1.5rem;
   }
 
   .page {
     padding-right: 1rem;
+    flex-direction: column;
+  }
+
+  .feed-column {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
   }
 }
 
@@ -1028,6 +1040,7 @@ input[readonly] {
     transform: translateX(400px);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -1039,6 +1052,7 @@ input[readonly] {
     transform: translateX(0);
     opacity: 1;
   }
+
   to {
     transform: translateX(400px);
     opacity: 0;

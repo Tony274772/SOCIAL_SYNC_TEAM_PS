@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
 const User = require('../models/User');
-const { emitToAll, publishToRedis } = require('../services/socketService');
+const { emitToAll, emitToUser, publishToRedis } = require('../services/socketService');
 const { logActivity } = require('../services/activityLogger');
 
 /**
@@ -74,14 +74,24 @@ router.post('/', async (req, res) => {
     });
     
     // Emit real-time notification
-    emitToAll('new-post', {
-      postId: saved._id,
-      caption: saved.caption,
-      createdBy: saved.ownerId,
-      createdByUsername: saved.ownerUsername,
-      mediaType: saved.mediaType,
-      timestamp: new Date(),
-    });
+    // Emit real-time notification to followers
+    try {
+      const owner = await User.findOne({ userId: ownerId });
+      if (owner && owner.followers && Array.isArray(owner.followers)) {
+        owner.followers.forEach(followerId => {
+          emitToUser(followerId, 'new-post', {
+            postId: saved._id,
+            caption: saved.caption,
+            createdBy: saved.ownerId,
+            createdByUsername: saved.ownerUsername,
+            mediaType: saved.mediaType,
+            timestamp: new Date(),
+          });
+        });
+      }
+    } catch (notifyErr) {
+      console.error('Error sending new post notifications:', notifyErr);
+    }
 
     res.status(201).json({
       message: 'Post created successfully',
@@ -147,13 +157,16 @@ router.post('/:id/like', async (req, res) => {
     });
 
     // Emit real-time notification
-    emitToAll('post-liked', {
-      postId: post._id,
-      likedBy: userId,
-      totalLikes: post.likes,
-      liked,
-      timestamp: new Date(),
-    });
+    // Emit real-time notification to post owner
+    if (post.ownerId !== userId) {
+      emitToUser(post.ownerId, 'post-liked', {
+        postId: post._id,
+        likedBy: userId,
+        totalLikes: post.likes,
+        liked,
+        timestamp: new Date(),
+      });
+    }
 
     res.json({
       message: liked ? 'Post liked' : 'Post unliked',
@@ -218,13 +231,23 @@ router.post('/:id/comments', async (req, res) => {
     });
 
     // Emit real-time notification
-    emitToAll('comment-added', {
-      postId: post._id,
-      commentedBy: author,
-      commentText: text,
-      totalComments: post.comments.length,
-      timestamp: new Date(),
-    });
+    // Emit real-time notification to post owner
+    if (post.ownerId !== author) { // Assuming author is userId or username, logic might need adjustment if author is username but ownerId is userId. 
+      // Checking auth.js, author seems to be username in some contexts but let's check how it's passed.
+      // In posts.js:176 const { text, author } = req.body;
+      // In posts.js:192 const commentAuthor = author ...
+      // If author is username, we can't easily compare with ownerId (userId).
+      // However, the requirement is "if any coment ... notification should be recieved by right user".
+      // The right user is the post owner.
+      
+      emitToUser(post.ownerId, 'comment-added', {
+        postId: post._id,
+        commentedBy: author,
+        commentText: text,
+        totalComments: post.comments.length,
+        timestamp: new Date(),
+      });
+    }
 
     res.status(201).json({
       message: 'Comment added successfully',

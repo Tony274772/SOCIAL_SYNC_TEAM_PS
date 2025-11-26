@@ -66,95 +66,12 @@ const initializeSocket = (server) => {
       });
     });
 
-    // Listen for real-time post likes
-    socket.on('post-liked', (data) => {
-      // Broadcast to all connected users
-      io.emit('post-liked-notification', {
-        postId: data.postId,
-        likedBy: data.likedBy,
-        likedByUsername: data.likedByUsername,
-        totalLikes: data.totalLikes,
-        timestamp: new Date(),
-      });
-
-      // Publish to Redis for persistence
-      publishToRedis('post-events', {
-        type: 'liked',
-        postId: data.postId,
-        likedBy: data.likedBy,
-        likedByUsername: data.likedByUsername,
-        totalLikes: data.totalLikes,
-        timestamp: new Date(),
-      });
-    });
-
-    // Listen for real-time comments
-    socket.on('comment-added', (data) => {
-      // Broadcast to all connected users
-      io.emit('comment-added-notification', {
-        postId: data.postId,
-        commentedBy: data.commentedBy,
-        commentedByUsername: data.commentedByUsername,
-        commentText: data.commentText,
-        totalComments: data.totalComments,
-        timestamp: new Date(),
-      });
-
-      // Publish to Redis
-      publishToRedis('post-events', {
-        type: 'commented',
-        postId: data.postId,
-        commentedBy: data.commentedBy,
-        commentedByUsername: data.commentedByUsername,
-        commentText: data.commentText,
-        totalComments: data.totalComments,
-        timestamp: new Date(),
-      });
-    });
-
-    // Listen for new posts
-    socket.on('post-created', (data) => {
-      // Broadcast to all followers
-      io.emit('new-post-notification', {
-        postId: data.postId,
-        caption: data.caption,
-        createdBy: data.createdBy,
-        createdByUsername: data.createdByUsername,
-        mediaType: data.mediaType,
-        timestamp: new Date(),
-      });
-
-      // Publish to Redis
-      publishToRedis('post-events', {
-        type: 'created',
-        postId: data.postId,
-        caption: data.caption,
-        createdBy: data.createdBy,
-        createdByUsername: data.createdByUsername,
-        mediaType: data.mediaType,
-        timestamp: new Date(),
-      });
-    });
-
-    // Listen for follow events
-    socket.on('user-followed', (data) => {
-      // Broadcast follow notification
-      io.emit('follow-notification', {
-        followedBy: data.followedBy,
-        followedByUsername: data.followedByUsername,
-        followedUser: data.followedUser,
-        timestamp: new Date(),
-      });
-
-      // Publish to Redis
-      publishToRedis('user-events', {
-        type: 'followed',
-        followedBy: data.followedBy,
-        followedByUsername: data.followedByUsername,
-        followedUser: data.followedUser,
-        timestamp: new Date(),
-      });
-    });
+    // Listeners for real-time events have been moved to REST API controllers
+    // to ensure targeted notifications instead of broadcasting to all users.
+    // - post-liked
+    // - comment-added
+    // - post-created
+    // - user-followed
 
     // User disconnect
     socket.on('disconnect', () => {

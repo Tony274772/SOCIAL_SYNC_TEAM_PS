@@ -32,10 +32,10 @@ function initializeSocket() {
   // Real-time post liked notification
   socket.on('post-liked', (data) => {
     console.log('Post liked:', data);
-    
+
     // Update UI
     updatePostLikes(data.postId, data.totalLikes, data.liked);
-    
+
     showNotification(
       `Someone liked a post! (${data.totalLikes} likes)`,
       'like'
@@ -74,13 +74,14 @@ function initializeSocket() {
   socket.on('user-followed', (data) => {
     console.log('User followed:', data);
 
-    showNotification(
-      `${data.followedByUsername} started following ${data.followedUser}`,
-      'follow'
-    );
-
-    // Update stats
+    // Only show notification if you are the one being followed
     if (currentUser && currentUser.userId === data.followedUser) {
+      showNotification(
+        `${data.followedByUsername} started following you!`,
+        'follow'
+      );
+
+      // Update stats
       loadProfileStats();
     }
   });

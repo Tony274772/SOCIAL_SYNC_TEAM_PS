@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const { emitToAll } = require('../services/socketService');
 
 /**
  * Generate a unique 7-digit user ID
@@ -260,7 +259,12 @@ router.get('/suggestions', async (req, res) => {
   try {
     const { userId } = req.query;
 
-    const filter = userId ? { userId: { $ne: userId } } : {};
+    const currentUser = await User.findOne({ userId });
+    let filter = { userId: { $ne: userId } };
+
+    if (currentUser && Array.isArray(currentUser.following)) {
+      filter.userId = { $ne: userId, $nin: currentUser.following };
+    }
 
     const users = await User.find(filter)
       .sort({ createdAt: -1 })
@@ -332,11 +336,15 @@ router.post('/follow', async (req, res) => {
 
     await Promise.all([fromUser.save(), toUser.save()]);
 
-    // Emit real-time notification
-    emitToAll('user-followed', {
+    // Import emitToUser for targeted notifications
+    const { emitToUser } = require('../services/socketService');
+
+    // Emit real-time notification ONLY to the user being followed (not broadcast to all)
+    emitToUser(toUser.userId, 'user-followed', {
       followedBy: fromUser.userId,
       followedByUsername: fromUser.username,
       followedUser: toUser.userId,
+      isFollowing: !isCurrentlyFollowing,
       timestamp: new Date(),
     });
 

@@ -128,7 +128,7 @@ function loadCurrentUser() {
  */
 function setCurrentUser(user) {
   if (!user) return;
-  
+
   currentUser = user;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
@@ -248,7 +248,7 @@ function closeCreateModal() {
 }
 
 /**
- * Open relations modal
+ * Open relations modal (Followers/Following)
  */
 async function openRelationsModal(type) {
   if (!relationsModal || !relationsList || !relationsModalTitle) {
@@ -258,6 +258,23 @@ async function openRelationsModal(type) {
   relationsModalTitle.textContent = type === 'followers' ? 'Followers' : 'Following';
   relationsList.innerHTML = '<div class="empty-state">Loading...</div>';
   relationsModal.classList.remove('hidden');
+
+  // Reset and setup search
+  const searchInput = document.getElementById('relations-search');
+  if (searchInput) {
+    searchInput.value = '';
+    const newSearchInput = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+
+    newSearchInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const items = relationsList.querySelectorAll('.relations-item');
+      items.forEach(item => {
+        const username = item.querySelector('.relations-main')?.textContent.toLowerCase() || '';
+        item.style.display = username.includes(term) ? 'flex' : 'none';
+      });
+    });
+  }
 
   if (!currentUser || !currentUser.userId) {
     relationsList.innerHTML = '<div class="empty-state">Log in to see this list.</div>';
@@ -288,6 +305,8 @@ async function openRelationsModal(type) {
       avatar.className = 'avatar-placeholder small';
 
       const info = document.createElement('div');
+      info.style.flex = '1';
+
       const mainText = document.createElement('div');
       mainText.className = 'relations-main';
       mainText.textContent = user.username || 'User';
@@ -298,17 +317,15 @@ async function openRelationsModal(type) {
 
       info.appendChild(mainText);
       info.appendChild(subText);
-
       item.appendChild(avatar);
       item.appendChild(info);
 
-      // Add follow back button if this is a follower
+      // Add Follow Back button for followers
       if (type === 'followers' && user.userId && currentUser && currentUser.userId !== user.userId) {
         const followBackBtn = document.createElement('button');
         followBackBtn.type = 'button';
         followBackBtn.className = 'follow-back-btn';
-        
-        // Check if already following this user
+
         if (Array.isArray(currentUser.following) && currentUser.following.includes(user.userId)) {
           followBackBtn.textContent = 'Following';
           followBackBtn.classList.add('already-following');
@@ -318,8 +335,6 @@ async function openRelationsModal(type) {
 
         followBackBtn.addEventListener('click', async (e) => {
           e.preventDefault();
-          if (!currentUser || !currentUser.userId) return;
-
           try {
             const response = await fetch(`${API_BASE_URL}/auth/follow`, {
               method: 'POST',
@@ -331,9 +346,8 @@ async function openRelationsModal(type) {
             });
 
             const data = await response.json();
-
             if (!response.ok) {
-              showError(data.message || 'Failed to follow back');
+              showError(data.message || 'Failed to follow');
               return;
             }
 
@@ -352,28 +366,72 @@ async function openRelationsModal(type) {
               followBackBtn.classList.remove('already-following');
               if (Array.isArray(currentUser.following)) {
                 const idx = currentUser.following.indexOf(user.userId);
-                if (idx !== -1) {
-                  currentUser.following.splice(idx, 1);
-                }
+                if (idx !== -1) currentUser.following.splice(idx, 1);
               }
             }
 
-            // Update local storage
-            try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-            } catch (err) {
-              console.error('Error saving user to storage:', err);
-            }
-
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
             loadProfileStats();
-            showSuccess(data.message || 'Follow back successful');
+            showSuccess(data.message || 'Success');
           } catch (err) {
-            console.error('Follow back error:', err);
-            showError('Failed to follow back');
+            console.error('Follow error:', err);
+            showError('Failed to follow');
           }
         });
 
         item.appendChild(followBackBtn);
+      }
+
+      // Add Unfollow button for following list
+      if (type === 'following') {
+        const unfollowBtn = document.createElement('button');
+        unfollowBtn.type = 'button';
+        unfollowBtn.className = 'follow-back-btn already-following';
+        unfollowBtn.textContent = 'Unfollow';
+        unfollowBtn.style.backgroundColor = '#efefef';
+        unfollowBtn.style.color = '#000';
+
+        unfollowBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          try {
+            const response = await fetch(`${API_BASE_URL}/auth/follow`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                fromUserId: currentUser.userId,
+                toUserId: user.userId,
+              }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+              showError(data.message || 'Failed to unfollow');
+              return;
+            }
+
+            // Remove from UI immediately
+            item.remove();
+
+            // Update local state
+            if (Array.isArray(currentUser.following)) {
+              const idx = currentUser.following.indexOf(user.userId);
+              if (idx !== -1) currentUser.following.splice(idx, 1);
+            }
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+            loadProfileStats();
+            showSuccess('Unfollowed');
+
+            if (relationsList.children.length === 0) {
+              relationsList.innerHTML = `<div class="empty-state">No ${type} yet.</div>`;
+            }
+          } catch (err) {
+            console.error('Unfollow error:', err);
+            showError('Failed to unfollow');
+          }
+        });
+
+        item.appendChild(unfollowBtn);
       }
 
       relationsList.appendChild(item);
@@ -1257,11 +1315,16 @@ async function loadSuggestions() {
 
           followBtn.textContent = data.following ? 'Following' : 'Follow';
           loadProfileStats();
-          
-          // Refresh suggestions to remove followed user
+
+          // Remove from suggestions list immediately
           if (data.following) {
-            console.log('🔄 Refreshing suggestions after follow');
-            loadSuggestions();
+            li.remove();
+            if (suggestionsList.children.length === 0) {
+              const noSuggestions = document.createElement('li');
+              noSuggestions.className = 'suggestion-item';
+              noSuggestions.textContent = 'No more suggestions.';
+              suggestionsList.appendChild(noSuggestions);
+            }
           }
 
           // Emit real-time notification
